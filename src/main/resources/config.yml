@@ -1,0 +1,33 @@
+settings:
+  # Формат сообщений: поддерживает &-цвета и (если есть PlaceholderAPI) плейсхолдеры
+  # Плейсхолдеры:
+  # %player_name%, %world_name%, %death_message%, %from_world%, %to_world%
+  # %is_bedrock% (true/false), %platform% (JAVA/BEDROCK)
+  # Также любые плейсхолдеры PlaceholderAPI из других плагинов
+
+messages:
+  teleport:
+    enabled: true
+    to-player: "&7[&bTP&7] &fТы телепортировался: &e%from_world% &7-> &a%to_world%"
+    broadcast:
+      enabled: false
+      format: "&7[&bTP&7] &f%player_name%: &e%from_world% &7-> &a%to_world%"
+
+  time:
+    enabled: true
+    day: "&7[&eTIME&7] &fНаступил &aдень&f в мире &e%world_name%"
+    night: "&7[&eTIME&7] &fНаступила &9ночь&f в мире &e%world_name%"
+
+  death:
+    enabled: true
+    format: "&7[&cDEATH&7] &f%player_name% &7— &c%death_message%"
+
+  gamemode:
+    self: "&7[&aGM&7] &fТвой режим: &e%gamemode%"
+    other-sender: "&7[&aGM&7] &fТы поставил режим &e%gamemode% &fигроку &b%target%"
+    other-target: "&7[&aGM&7] &fТебе поставили режим &e%gamemode%"
+
+  errors:
+    no-permission: "&cНет прав."
+    player-not-found: "&cИгрок не найден."
+    usage: "&cИспользование: /gm <c|s|a|sp> [ник]"
