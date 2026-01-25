@@ -63,5 +63,5 @@ public class PlayerEvents implements Listener {
 
         e.deathMessage(msg.parse(p, fmt, v));
     }
-    }
+
 }
