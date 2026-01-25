@@ -1,0 +1,18 @@
+settings:
+  # Формат сообщений: поддерживает &-цвета и (если есть PlaceholderAPI) плейсхолдеры
+  # Плейсхолдеры:
+  # %player_name%, %world_name%, %death_message%, %from_world%, %to_world%
+  # %is_bedrock% (true/false), %platform% (JAVA/BEDROCK)
+  # Также любые плейсхолдеры PlaceholderAPI из других плагинов
+
+messages:
+  teleport:
+    enabled: true
+    to-player: "&7[&bTP&7] &fТы телепортировался: &e%from_world% &7-> &a%to_world%"
+    broadcast:
+      enabled: false
+      format: "&7[&bTP&7] &f%player_name%: &e%from_world% &7-> &a%to_world%"
+  time:
+    enabled: true
+    set-day: "&7[&eTIME&7] &fИгрок &a%player_name% &fустановил время суток на &eДЕНЬ"
+    set-night: "&7[&eTIME&7] &fИгрок &a%player_name% &fустановил время суток на &9НОЧЬ"
