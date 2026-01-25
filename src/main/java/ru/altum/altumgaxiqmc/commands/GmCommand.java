@@ -42,6 +42,40 @@ public class GmCommand implements CommandExecutor, TabCompleter {
         };
     }
 
+
+    private Player findOnlinePlayer(String input) {
+        if (input == null || input.isEmpty()) return null;
+
+        // 1) Exact match (case-sensitive)
+        Player p = Bukkit.getPlayerExact(input);
+        if (p != null) return p;
+
+        // 2) Bukkit helper (partial & case-insensitive)
+        p = Bukkit.getPlayer(input);
+        if (p != null) return p;
+
+        String in = input.toLowerCase(Locale.ROOT);
+        String inNoDot = in.startsWith(".") ? in.substring(1) : in;
+
+        // 3) Manual exact ignore-case + Floodgate dot support
+        for (Player pl : Bukkit.getOnlinePlayers()) {
+            String low = pl.getName().toLowerCase(Locale.ROOT);
+            if (low.equals(in) || low.equals(inNoDot)) return pl;
+
+            if (low.startsWith(".") && low.substring(1).equals(in)) return pl;
+            if (in.startsWith(".") && in.substring(1).equals(low)) return pl;
+        }
+
+        // 4) Starts-with fallback
+        for (Player pl : Bukkit.getOnlinePlayers()) {
+            String low = pl.getName().toLowerCase(Locale.ROOT);
+            String lowNoDot = low.startsWith(".") ? low.substring(1) : low;
+            if (low.startsWith(in) || lowNoDot.startsWith(inNoDot)) return pl;
+        }
+
+        return null;
+    }
+
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
 
@@ -84,7 +118,7 @@ public class GmCommand implements CommandExecutor, TabCompleter {
             return true;
         }
 
-        Player target = Bukkit.getPlayerExact(args[1]);
+        Player target = findOnlinePlayer(args[1]);
         if (target == null) {
             p.sendMessage(msg.parse(p, notFound, msg.baseVars(p)));
             return true;
@@ -118,12 +152,17 @@ public class GmCommand implements CommandExecutor, TabCompleter {
         if (args.length == 2) {
             if (!p.hasPermission("altumgaxiq.gm.others")) return Collections.emptyList();
             String pref = args[1].toLowerCase(Locale.ROOT);
-            return Bukkit.getOnlinePlayers().stream()
-                    .map(Player::getName)
+            List<String> names = new ArrayList<>();
+            for (Player pl : Bukkit.getOnlinePlayers()) {
+                String name = pl.getName();
+                names.add(name);
+                if (name.startsWith(".")) names.add(name.substring(1));
+            }
+            return names.stream()
+                    .distinct()
                     .filter(n -> n.toLowerCase(Locale.ROOT).startsWith(pref))
                     .limit(20)
-                    .collect(Collectors.toList());
-        }
+                    .collect(Collectors.toList());}
 
         return Collections.emptyList();
     }
