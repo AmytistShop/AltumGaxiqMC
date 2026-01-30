@@ -3,6 +3,7 @@ package ru.altum.altumgaxiqmc.commands;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.command.*;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.entity.Player;
 import ru.altum.altumgaxiqmc.AltumGaxiqMC;
 import ru.altum.altumgaxiqmc.util.Msg;
@@ -46,7 +47,9 @@ public class GmCommand implements CommandExecutor, TabCompleter {
     private Player findOnlinePlayer(String input) {
         if (input == null || input.isEmpty()) return null;
 
-        // 1) Exact match (case-sensitive)
+        String wanted = normalizeName(input);
+
+        // 1) Exact username match
         Player p = Bukkit.getPlayerExact(input);
         if (p != null) return p;
 
@@ -54,17 +57,53 @@ public class GmCommand implements CommandExecutor, TabCompleter {
         p = Bukkit.getPlayer(input);
         if (p != null) return p;
 
-        String in = input.toLowerCase(Locale.ROOT);
-        String inNoDot = in.startsWith(".") ? in.substring(1) : in;
-
-        // 3) Manual exact ignore-case + Floodgate dot support
+        // 3) Username ignore-case + Floodgate dot support
         for (Player pl : Bukkit.getOnlinePlayers()) {
-            String low = pl.getName().toLowerCase(Locale.ROOT);
-            if (low.equals(in) || low.equals(inNoDot)) return pl;
-
-            if (low.startsWith(".") && low.substring(1).equals(in)) return pl;
-            if (in.startsWith(".") && in.substring(1).equals(low)) return pl;
+            String uname = normalizeName(pl.getName());
+            if (uname.equals(wanted)) return pl;
         }
+
+        // 4) Display name exact (nicknames)
+        for (Player pl : Bukkit.getOnlinePlayers()) {
+            String dn = normalizeName(displayNamePlain(pl));
+            if (dn.equals(wanted)) return pl;
+        }
+
+        // 5) Contains / word match (handles prefixes like [VIP] Alex)
+        for (Player pl : Bukkit.getOnlinePlayers()) {
+            String uname = normalizeName(pl.getName());
+            String dn = normalizeName(displayNamePlain(pl));
+            if (uname.contains(wanted) || dn.contains(wanted)) return pl;
+            for (String part : dn.split(" ")) {
+                if (part.equals(wanted)) return pl;
+            }
+        }
+
+        // 6) Starts-with fallback
+        for (Player pl : Bukkit.getOnlinePlayers()) {
+            String uname = normalizeName(pl.getName());
+            String dn = normalizeName(displayNamePlain(pl));
+            if (uname.startsWith(wanted) || dn.startsWith(wanted)) return pl;
+        }
+
+        return null;
+    }
+
+        // 4) Manual match: display name (nicknames from plugins)
+        for (Player pl : Bukkit.getOnlinePlayers()) {
+            String dn = normalizeName(displayNamePlain(pl));
+            if (dn.equals(wanted)) return pl;
+        }
+
+        // 5) Starts-with fallback (username or display name)
+        for (Player pl : Bukkit.getOnlinePlayers()) {
+            String uname = normalizeName(pl.getName());
+            String dn = normalizeName(displayNamePlain(pl));
+            if (uname.startsWith(wanted) || dn.startsWith(wanted)) return pl;
+        }
+
+        return null;
+    }
 
         // 4) Starts-with fallback
         for (Player pl : Bukkit.getOnlinePlayers()) {
@@ -75,6 +114,24 @@ public class GmCommand implements CommandExecutor, TabCompleter {
 
         return null;
     }
+
+    private String normalizeName(String s) {
+        if (s == null) return "";
+        s = s.replace('§', '&');
+        s = s.replaceAll("(?i)&[0-9A-FK-OR]", "");
+        s = s.trim();
+        if (s.startsWith(".")) s = s.substring(1);
+        return s.toLowerCase(Locale.ROOT);
+    }
+
+    private String displayNamePlain(Player p) {
+        try {
+            return PlainTextComponentSerializer.plainText().serialize(p.displayName());
+        } catch (Throwable t) {
+            return p.getName();
+        }
+    }
+
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {

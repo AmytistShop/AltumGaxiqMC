@@ -9,10 +9,15 @@ commands:
   gm:
     description: Быстрая смена режима игры
     usage: /gm <c|s|a|sp|creative|survival|adventure|spectator> [ник]
-    aliases: [gamemode]
+  altumgm:
+    description: Альтернативная команда GM (если /gm занят другим плагином)
+    usage: /altumgm <c|s|a|sp|creative|survival|adventure|spectator> [ник]
+    aliases: [agm]
 
 permissions:
   altumgaxiq.gm:
     default: op
   altumgaxiq.gm.others:
+    default: op
+  altumgaxiq.time:
     default: op
