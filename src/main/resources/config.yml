@@ -8,6 +8,13 @@ settings:
 messages:
   teleport:
     enabled: true
+    # Анти-спам: сообщение максимум раз в N мс на игрока
+    cooldown-ms: 1500
+    # Если true — сообщение только при смене мира
+    only-world-change: false
+    # Игнорировать причины телепорта (чтобы не спамило от авторизации/плагинов)
+    # Возможные: COMMAND, PLUGIN, UNKNOWN, ENDER_PEARL, NETHER_PORTAL, END_PORTAL, SPECTATE, CHORUS_FRUIT
+    ignore-causes: [PLUGIN, UNKNOWN]
     to-player: "&7[&bTP&7] &fТы телепортировался: &e%from_world% &7-> &a%to_world%"
     broadcast:
       enabled: false

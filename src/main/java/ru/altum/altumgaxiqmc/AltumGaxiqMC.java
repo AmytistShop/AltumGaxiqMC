@@ -17,10 +17,15 @@ public final class AltumGaxiqMC extends JavaPlugin {
         this.msg = new Msg(this);
 
         // Commands
+        GmCommand gm = new GmCommand(this, msg);
+
         if (getCommand("gm") != null) {
-            GmCommand gm = new GmCommand(this, msg);
             getCommand("gm").setExecutor(gm);
             getCommand("gm").setTabCompleter(gm);
+        }
+        if (getCommand("altumgm") != null) {
+            getCommand("altumgm").setExecutor(gm);
+            getCommand("altumgm").setTabCompleter(gm);
         }
 
         // Listeners

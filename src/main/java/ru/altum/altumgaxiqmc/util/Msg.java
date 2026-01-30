@@ -2,6 +2,7 @@ package ru.altum.altumgaxiqmc.util;
 
 import me.clip.placeholderapi.PlaceholderAPI;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
@@ -13,6 +14,8 @@ import java.util.Map;
 
 public class Msg {
     private final AltumGaxiqMC plugin;
+
+    private final LegacyComponentSerializer legacy = LegacyComponentSerializer.legacyAmpersand();
 
     public Msg(AltumGaxiqMC plugin) {
         this.plugin = plugin;
@@ -42,12 +45,6 @@ public class Msg {
         return isBedrock(player) ? "BEDROCK" : "JAVA";
     }
 
-    public String colorizeAmpersand(String s) {
-        if (s == null) return "";
-        // Replace & -> § for legacy colors
-        return s.replace("&", "§");
-    }
-
     public Component parse(Player p, String raw, Map<String, String> vars) {
         if (raw == null || raw.isEmpty()) return Component.empty();
 
@@ -74,10 +71,10 @@ public class Msg {
             s = PlaceholderAPI.setPlaceholders(p, s);
         }
 
-        s = colorizeAmpersand(s);
+        // Support both & and § in config
+        s = s.replace('§', '&');
 
-        // Paper renders legacy codes in Component.text properly in most cases
-        return Component.text(s);
+        return legacy.deserialize(s);
     }
 
     public void send(Player p, String path, Map<String, String> vars) {
