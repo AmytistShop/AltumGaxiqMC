@@ -1,9 +1,9 @@
 package ru.altum.altumgaxiqmc.commands;
 
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.command.*;
-import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.entity.Player;
 import ru.altum.altumgaxiqmc.AltumGaxiqMC;
 import ru.altum.altumgaxiqmc.util.Msg;
@@ -43,84 +43,14 @@ public class GmCommand implements CommandExecutor, TabCompleter {
         };
     }
 
-
-    private Player findOnlinePlayer(String input) {
-        if (input == null || input.isEmpty()) return null;
-
-        String wanted = normalizeName(input);
-
-        // 1) Exact username match
-        Player p = Bukkit.getPlayerExact(input);
-        if (p != null) return p;
-
-        // 2) Bukkit helper (partial & case-insensitive)
-        p = Bukkit.getPlayer(input);
-        if (p != null) return p;
-
-        // 3) Username ignore-case + Floodgate dot support
-        for (Player pl : Bukkit.getOnlinePlayers()) {
-            String uname = normalizeName(pl.getName());
-            if (uname.equals(wanted)) return pl;
-        }
-
-        // 4) Display name exact (nicknames)
-        for (Player pl : Bukkit.getOnlinePlayers()) {
-            String dn = normalizeName(displayNamePlain(pl));
-            if (dn.equals(wanted)) return pl;
-        }
-
-        // 5) Contains / word match (handles prefixes like [VIP] Alex)
-        for (Player pl : Bukkit.getOnlinePlayers()) {
-            String uname = normalizeName(pl.getName());
-            String dn = normalizeName(displayNamePlain(pl));
-            if (uname.contains(wanted) || dn.contains(wanted)) return pl;
-            for (String part : dn.split(" ")) {
-                if (part.equals(wanted)) return pl;
-            }
-        }
-
-        // 6) Starts-with fallback
-        for (Player pl : Bukkit.getOnlinePlayers()) {
-            String uname = normalizeName(pl.getName());
-            String dn = normalizeName(displayNamePlain(pl));
-            if (uname.startsWith(wanted) || dn.startsWith(wanted)) return pl;
-        }
-
-        return null;
-    }
-
-        // 4) Manual match: display name (nicknames from plugins)
-        for (Player pl : Bukkit.getOnlinePlayers()) {
-            String dn = normalizeName(displayNamePlain(pl));
-            if (dn.equals(wanted)) return pl;
-        }
-
-        // 5) Starts-with fallback (username or display name)
-        for (Player pl : Bukkit.getOnlinePlayers()) {
-            String uname = normalizeName(pl.getName());
-            String dn = normalizeName(displayNamePlain(pl));
-            if (uname.startsWith(wanted) || dn.startsWith(wanted)) return pl;
-        }
-
-        return null;
-    }
-
-        // 4) Starts-with fallback
-        for (Player pl : Bukkit.getOnlinePlayers()) {
-            String low = pl.getName().toLowerCase(Locale.ROOT);
-            String lowNoDot = low.startsWith(".") ? low.substring(1) : low;
-            if (low.startsWith(in) || lowNoDot.startsWith(inNoDot)) return pl;
-        }
-
-        return null;
-    }
-
     private String normalizeName(String s) {
         if (s == null) return "";
         s = s.replace('§', '&');
+        // remove legacy & color codes
         s = s.replaceAll("(?i)&[0-9A-FK-OR]", "");
         s = s.trim();
-        if (s.startsWith(".")) s = s.substring(1);
+        if (s.startsWith(".")) s = s.substring(1); // Floodgate dot support
+        s = s.replaceAll("\s+", " ");
         return s.toLowerCase(Locale.ROOT);
     }
 
@@ -132,6 +62,50 @@ public class GmCommand implements CommandExecutor, TabCompleter {
         }
     }
 
+    private Player findOnlinePlayer(String input) {
+        if (input == null || input.isEmpty()) return null;
+
+        String wanted = normalizeName(input);
+
+        // Exact username
+        Player p = Bukkit.getPlayerExact(input);
+        if (p != null) return p;
+
+        // Bukkit helper (partial, ignore-case)
+        p = Bukkit.getPlayer(input);
+        if (p != null) return p;
+
+        // Username ignore-case (+ dotless)
+        for (Player pl : Bukkit.getOnlinePlayers()) {
+            if (normalizeName(pl.getName()).equals(wanted)) return pl;
+            // accept ".Name" vs "Name"
+            if (normalizeName("." + pl.getName()).equals(wanted)) return pl;
+        }
+
+        // DisplayName exact
+        for (Player pl : Bukkit.getOnlinePlayers()) {
+            if (normalizeName(displayNamePlain(pl)).equals(wanted)) return pl;
+        }
+
+        // Contains / word match for displayName prefixes like "[VIP] Alex"
+        for (Player pl : Bukkit.getOnlinePlayers()) {
+            String uname = normalizeName(pl.getName());
+            String dname = normalizeName(displayNamePlain(pl));
+            if (uname.contains(wanted) || dname.contains(wanted)) return pl;
+            for (String part : dname.split(" ")) {
+                if (part.equals(wanted)) return pl;
+            }
+        }
+
+        // Starts-with fallback
+        for (Player pl : Bukkit.getOnlinePlayers()) {
+            String uname = normalizeName(pl.getName());
+            String dname = normalizeName(displayNamePlain(pl));
+            if (uname.startsWith(wanted) || dname.startsWith(wanted)) return pl;
+        }
+
+        return null;
+    }
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
@@ -141,7 +115,7 @@ public class GmCommand implements CommandExecutor, TabCompleter {
         String notFound = plugin.getConfig().getString("messages.errors.player-not-found", "&cИгрок не найден.");
 
         if (!(sender instanceof Player p)) {
-            sender.sendMessage(msg.colorizeAmpersand("&cКоманда доступна только игроку."));
+            sender.sendMessage(msg.parse(null, "&cКоманда доступна только игроку.", null));
             return true;
         }
 
@@ -161,6 +135,7 @@ public class GmCommand implements CommandExecutor, TabCompleter {
             return true;
         }
 
+        // /gm c  -> self
         if (args.length == 1) {
             p.setGameMode(gm);
 
@@ -170,6 +145,7 @@ public class GmCommand implements CommandExecutor, TabCompleter {
             return true;
         }
 
+        // /gm c nick -> other
         if (!p.hasPermission("altumgaxiq.gm.others")) {
             p.sendMessage(msg.parse(p, noPerm, msg.baseVars(p)));
             return true;
@@ -200,26 +176,30 @@ public class GmCommand implements CommandExecutor, TabCompleter {
         if (!(sender instanceof Player p)) return Collections.emptyList();
 
         if (args.length == 1) {
+            String pref = args[0].toLowerCase(Locale.ROOT);
             return Arrays.asList("c", "s", "a", "sp", "creative", "survival", "adventure", "spectator")
                     .stream()
-                    .filter(x -> x.startsWith(args[0].toLowerCase(Locale.ROOT)))
+                    .filter(x -> x.startsWith(pref))
                     .collect(Collectors.toList());
         }
 
         if (args.length == 2) {
             if (!p.hasPermission("altumgaxiq.gm.others")) return Collections.emptyList();
             String pref = args[1].toLowerCase(Locale.ROOT);
+
             List<String> names = new ArrayList<>();
             for (Player pl : Bukkit.getOnlinePlayers()) {
                 String name = pl.getName();
                 names.add(name);
                 if (name.startsWith(".")) names.add(name.substring(1));
             }
+
             return names.stream()
                     .distinct()
                     .filter(n -> n.toLowerCase(Locale.ROOT).startsWith(pref))
                     .limit(20)
-                    .collect(Collectors.toList());}
+                    .collect(Collectors.toList());
+        }
 
         return Collections.emptyList();
     }
